@@ -558,12 +558,50 @@
 		}
 		return result;
 	}
+
+	function getPageSize(){
+		var xScroll, yScroll, pageHeight, pageWidth, arrayPageSize,windowWidth, windowHeight;
+		if (window.innerHeight && window.scrollMaxY) {
+			xScroll = document.body.scrollWidth;
+			yScroll = window.innerHeight + window.scrollMaxY;
+		} else if (document.body.scrollHeight > document.body.offsetHeight) { // all but Explorer Mac
+			xScroll = document.body.scrollWidth;
+			yScroll = document.body.scrollHeight;
+		} else { // Explorer Mac...would also work in Explorer 6 Strict, Mozilla and Safari
+			xScroll = document.body.offsetWidth;
+			yScroll = document.body.offsetHeight;
+		}
+		if (self.innerHeight) { // all except Explorer
+			windowWidth = self.innerWidth;
+			windowHeight = self.innerHeight;
+		} else if (document.documentElement && document.documentElement.clientHeight) { // Explorer 6 Strict Mode
+			windowWidth = document.documentElement.clientWidth;
+			windowHeight = document.documentElement.clientHeight;
+		} else if (document.body) { // other Explorers
+			windowWidth = document.body.clientWidth;
+			windowHeight = document.body.clientHeight;
+		}
+
+		if (yScroll < windowHeight) {
+			pageHeight = windowHeight;
+		} else {
+			pageHeight = yScroll;
+		}
+		if (xScroll < windowWidth) {
+			pageWidth = windowWidth;
+		} else {
+			pageWidth = xScroll;
+		}
+		arrayPageSize = [pageWidth, pageHeight, windowWidth, windowHeight];
+		return arrayPageSize;
+
+	}
 	/*
 	 * 页面各个元素的初始化
 	 * */
 	function initDomAndAnim(skin){
 		//设置canvas大小
-	 	var initSize = wyx.h5game.getPageSize(),min,max;
+	 	var initSize = getPageSize(),min,max;
 		ctx = canvas.getContext('2d');
 	 	
 	 	min = Math.min(initSize[0],initSize[1]);
@@ -629,27 +667,15 @@
 		divscreen.dom.style.display = 'block';
 
 		downScreen = (function(divscreen,diffHeight,window){
-				return function(){
-					window.clearTimeout(divscreen.uping);
-					if(parseInt(divscreen.dom.style.top ) < -16 ){
-						divscreen.dom.style.top = parseInt(divscreen.dom.style.top ) +16+'px';
-						divscreen.downing =setTimeout(arguments.callee,5);
-					}else{
-						divscreen.dom.style.top = '0px';
-					}
-				};
-			})(divscreen,diffHeight,window);
+			return function(){
+				divscreen.dom.style.top = '0px';
+			};
+		})(divscreen,diffHeight,window);
 
 
 		upScreen = (function(divscreen,diffHeight,window){
 			return function(){
-				window.clearTimeout(divscreen.downing);
-				if(parseInt(divscreen.dom.style.top ) >  diffHeight+16){
-					divscreen.dom.style.top = parseInt(divscreen.dom.style.top ) -16+'px';
-					divscreen.uping = setTimeout(arguments.callee,5);
-				}else{
-					divscreen.dom.style.top = diffHeight +'px';
-				}
+				divscreen.dom.style.top = diffHeight +'px';
 			};
 		})(divscreen,diffHeight - divscreen.height,window);
 
@@ -1038,10 +1064,10 @@
 		
 		//动画开始
 		var requestAnimationFrame = getAnimateFunction();
-		var start = new Date(),i,diffTime;
+		var start = Date.now(),i,diffTime;
 		//定时执行动画
 		requestAnimationFrame(function(time) {
-			time = time || new Date();
+			var time = Date.now();
 			if(anim.stoped && !hasLocked()){
 				noAnim = true;
 				return;
@@ -1473,20 +1499,19 @@
 			requestAnimationFrame(arguments.callee);
 		});
 	};
+
+	function touchOrMouseDown(el, fn){
+		el.addEventListener('mousedown', fn, false);
+		el.addEventListener('touchstart', fn, false);
+	}
 	
 	//绑定事件，fps
 	(function(){
 		//游戏部分事件绑定
-		var start = 'mousedown',move = 'mousemove',end = 'mouseup';
-		if(wyx.h5game.isEventSupported('touchstart')){
-			start = 'touchstart'; 
-			move = 'touchmove'; 
-			end ='touchend';
-		}
 		canvas = document.getElementById('canvas');
 		pauseBtn = document.getElementById('btn_pause');
 		timer = document.getElementById('div_timer');
-		canvas.addEventListener(start,function(e){//游戏canvas事件banding
+		touchOrMouseDown(canvas,function(e){//游戏canvas事件banding
 			if(!clickStop&&!gameplay.run.toolsEventLock){
 				clickStop = true;
 				setTimeout(function(){
@@ -1499,36 +1524,36 @@
 					});
 				}
 			}
-		},false);
-		pauseBtn.addEventListener(start,function(e){//暂停按钮
+		});
+		touchOrMouseDown(pauseBtn ,function(e){//暂停按钮
 			if(!anim.paused){
 				if(gameTime >0){
 					anim.pause(); 
 				}
 				openCtl(gameTime >0);
 			}
-		},false);
+		});
 		
 		//菜单事件绑定
 		var resumeBtn = document.getElementById('resume');
 		var restartBtn = document.getElementById('restart');
 		var quitBtn = document.getElementById('quit');
-		resumeBtn.addEventListener(start,function(e){
+		touchOrMouseDown(resumeBtn, function(e){
 			anim.resume();
 			closeCtl();
-		},false);
-		restartBtn.addEventListener(start,function(e){
+		});
+		touchOrMouseDown(restartBtn, function(e){
 			anim.refreshAll();
 		 	anim.reStart();
 		 	closeCtl();
-		},false);
-		quitBtn.addEventListener(start,function(e){
+		});
+		touchOrMouseDown(quitBtn, function(e){
 			try{
 				closeCtl();
 				exit();
 			}catch(ex){
 			}
-		},false);
+		});
 
 		//help
 		divHelp = document.getElementById('help_div');
@@ -1540,46 +1565,28 @@
 		var night = document.getElementById('night');
 		var about = document.getElementById('about');
 		var help = document.getElementById('help');
-		oneminute.addEventListener(start,function(e){
+		touchOrMouseDown(oneminute, function(e){
 			enter();
 			initDomAndAnim('140150');
-		},false);
-		night.addEventListener(start,function(e){
+		});
+		touchOrMouseDown(night, function(e){
 			enter();
 			initDomAndAnim('night');
-		},false);
-		about.addEventListener(start,function(e){
+		});
+		touchOrMouseDown(about, function(e){
 			divHelp.style.display='block';
 			document.getElementById('help_div_about_us').style.display='block';
-		},false);
-		help.addEventListener(start,function(e){
+		});
+		touchOrMouseDown(help, function(e){
 			divHelp.style.display='block';
 			document.getElementById('help_div_0').style.display='block';
-		},false);
+		});
 
-		// document.getElementById('rankingBtn').addEventListener(start,function(e){
-		// 	divHelp.style.display='block';
-		// 	document.getElementById('help_div_ranking').style.display='block';
-		// 	try{
-		// 		if(!localStorage['ranking']||! JSON.parse(localStorage['ranking']).length){
-		// 			localStorage['ranking'] = JSON.stringify(new Array());
-		// 		}
-		// 		var ranking = JSON.parse(localStorage['ranking']);
-		// 		var html = '';
-		// 		for(var i=0;i<ranking.length;i++){
-		// 			html += '<div>第'+(i+1)+'名 '+ranking[i].name+' '+ranking[i].score+'</div>';
-		// 		}	
-		// 		document.getElementById('help_div_ranking').innerHTML=html;
-		// 	}catch(e){
-		// 		localStorage['ranking'] = JSON.stringify(new Array());
-		// 	}
-							
-		// },false);
 
-		document.getElementById('divScreenHelpBtn').addEventListener(start,function(e){
+		touchOrMouseDown(document.getElementById('divScreenHelpBtn'), function(e){
 			divHelp.style.display='block';
 			document.getElementById('help_div_0').style.display='block';
-		},false);
+		});
 
 		if(!localStorage['notFristInit']){
 			localStorage['notFristInit'] = true;
@@ -1587,12 +1594,12 @@
 			document.getElementById('help_div_0').style.display='block';
 		}
 
-		document.getElementById('divScreenBodyHelpBtn').addEventListener(start,function(e){
+		touchOrMouseDown(document.getElementById('divScreenBodyHelpBtn'), function(e){
 			divHelp.style.display='block';
 			document.getElementById('help_div_0').style.display='block';
-		},false);
+		});
 
-		divHelp.addEventListener(start,function(e){
+		touchOrMouseDown(divHelp, function(e){
 			if(document.getElementById('help_div_0').style.display=='block'){
 				document.getElementById('help_div_0').style.display='none';
 				document.getElementById('help_div_1').style.display='block';
@@ -1605,105 +1612,14 @@
 				document.getElementById('help_div_about_us').style.display='none';
 				document.getElementById('help_div_ranking').style.display='none';
 			}
-		},false);
+		});
 
-		/**
-		 * 道具使用
-		 * 
-		var item = document.querySelector('#main .item');
-		item.addEventListener(start,function(e){
-			var target = e.target;
-			if(target.tagName.toUpperCase() == "EM"){
-				target = target.parentElement;
-			}
-			if(!noAnim){
-				switch (target.className){
-					case 'rock'://摇一摇
-						if(gameplay.run.rock.count >0){
-							gameplay.run.rock.count--;
-							rock.innerHTML = gameplay.run.rock.count;
-							anim.refreshAll();
-						}
-						break;
-					case 'magic'://魔棒
-						if(gameplay.run.magic.count >0 && !gameplay.run.magic.useing){
-							gameplay.run.magic.count--;
-							magic.innerHTML = gameplay.run.magic.count;
-							gameplay.run.magic.useing = true;
-						}
-						break;
-					case 'sandy'://沙漏
-						if(gameplay.run.sandy.count > 0){
-							gameplay.run.sandy.count--;
-							sandy.innerHTML = gameplay.run.sandy.count;
-							gameTime += gameplay.config.sandy.increase;
-							increaseTime += gameplay.config.sandy.increase;
-						}
-						break;
-					case 'mouse'://老鼠
-						if(gameplay.run.mouse.cells.length > 0){
-							var tempCell = gameplay.run.mouse.cells.pop();
-							mouse.innerHTML = gameplay.run.mouse.cells.length;
-							Cell.cells[tempCell.row][tempCell.col].animMouse(tempCell.direct);
-							score += tempCell.num*scoreMul;
-						}
-						break;
-					case 'clown'://小丑
-						if(gameplay.run.clown.count > 0){
-							gameplay.run.clown.count--;
-							clown.innerHTML = gameplay.run.clown.count;
-							anim.clearAll();
-						}
-						break;
-					default:
-						break;
-				}
-			}
-		},false);
-		**/
-		//end 道具使用
-		//屏幕旋转
-	/*	window.onorientationchange = function(e){
-			if(gameplay.run.rock.count >0){
-				gameplay.run.rock.count--;
-				gameplay.config.rock.limit--;
-				anim.refreshAll();
-			}
-		};*/
-		//fps
-		// window.setInterval(function(){
-		// 	document.getElementById('fps').innerHTML = '<span style="color:red;">'+ fps +'</span>';
-		// 	fps = 0;
-		// },1000);
+		
 	})();
 
 
 	function sendRank( rankId ,score){
-	 //   var XMLHttpRequestObject=false;
-	 //   if(window.XMLHttpRequest){
-	 //    XMLHttpRequestObject=new XMLHttpRequest();
-	 //   }else if(window.ActiveXObject){
-	 //    XMLHttpRequestObject=new ActiveXObject("Microsoft.XMLHTTP");
-	 //   }
-	 //    if(XMLHttpRequestObject){
-	 //     XMLHttpRequestObject.open("GET","index.php?rankId="+rankId+"&rankValue="+score);
-	 //     XMLHttpRequestObject.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
-	 //     XMLHttpRequestObject.onreadystatechange=function (){
-	 //      if(XMLHttpRequestObject.readyState==4 && XMLHttpRequestObject.status==200){
-	 //       ajaxData = eval('('+XMLHttpRequestObject.responseText+')');
-	 //       //console.log( ajaxData.error_code );
-	 //       if( ajaxData.error_code > 0 ){
-	 //       		//接口报错，隐藏
-		// 		//alert(ajaxData.error);
-	 //       		//console.log(ajaxData.error);
-	 //       }else{
-	 //      //      	var wyxJSBridgeObj = new WYXJSBridgeObj();
-		// //	wyxJSBridgeObj.sendFeedMsg(ajaxData.eventId);
-	 //       }
-	 //      }
-	 //     }
-	 //     XMLHttpRequestObject.send('');
-	 //    }
+	
 	}
 
 	(function(ab,index){

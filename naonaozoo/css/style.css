@@ -655,6 +655,7 @@ ul li{
     height: 381px;
     background: url('../img/screen.png') no-repeat;
     background-size:320px 381px;
+    transition: .25s;
     display: none;
 }
 

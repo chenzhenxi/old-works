@@ -14,10 +14,20 @@
 		img:null,//图片
 		ctx:null//canvas context 引用
 	};
+
+	function extend(target) {
+		var emptyArray = [], slice = emptyArray.slice;
+		slice.call(arguments, 1).forEach(function(source) {
+			for (var key in source) {
+				target[key] = source[key];
+			}
+		});
+		return target;
+	} 
 	
 	function Cell(option) {
 		this.isLock = false;//锁定，意味着需要更新，每一次timer都需要调用update。
-		wyx.h5game.extend(this,defaultStatus,option);
+		extend(this,defaultStatus,option);
 		this.diffY = Math.ceil(this.height*(Cell.sh/Cell.sw - 1));//高度差
 		this.y += this.diffY*this.row;//y轴的偏移
 		this.dropHeight = 0;
